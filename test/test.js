@@ -1,8 +1,5 @@
-'use strict';
-
-const assert = require('assert');
-
-const StreamSearch = require('../lib/sbmh.js');
+import assert from 'node:assert'
+import { StreamSearch } from '../lib/sbmh.js'
 
 [
   {
@@ -14,19 +11,19 @@ const StreamSearch = require('../lib/sbmh.js');
       '\n',
       'baz, hello\r',
       '\n world.',
-      '\r\n Node.JS rules!!\r\n\r\n',
+      '\r\n Node.JS rules!!\r\n\r\n'
     ],
     expect: [
       [false, 'foo'],
       [false, ' bar'],
-      [ true, null],
+      [true, null],
       [false, 'baz, hello'],
-      [ true, null],
+      [true, null],
       [false, ' world.'],
-      [ true, null],
-      [ true, ' Node.JS rules!!'],
-      [ true, ''],
-    ],
+      [true, null],
+      [true, ' Node.JS rules!!'],
+      [true, '']
+    ]
   },
   {
     needle: '---foobarbaz',
@@ -37,34 +34,39 @@ const StreamSearch = require('../lib/sbmh.js');
       '---foobarba',
       '---foobar',
       'ba',
-      '\r\n---foobarbaz--\r\n',
+      '\r\n---foobarbaz--\r\n'
     ],
     expect: [
-      [ true, null],
+      [true, null],
       [false, 'asdf'],
       [false, '\r\n'],
       [false, '---foobarba'],
       [false, '---foobarba'],
-      [ true, '\r\n'],
-      [false, '--\r\n'],
-    ],
-  },
+      [true, '\r\n'],
+      [false, '--\r\n']
+    ]
+  }
 ].forEach((test, i) => {
-  console.log(`Running test #${i + 1}`);
-  const { needle, chunks, expect } = test;
+  console.log(`Running test #${i + 1}`)
+  const { needle, chunks, expect } = test
+  const encoder = new TextEncoder()
+  const decoder = new TextDecoder()
 
-  const results = [];
-  const ss = new StreamSearch(Buffer.from(needle),
-                              (isMatch, data, start, end) => {
-    if (data)
-      data = data.toString('latin1', start, end);
-    else
-      data = null;
-    results.push([isMatch, data]);
-  });
+  const results = []
 
-  for (const chunk of chunks)
-    ss.push(Buffer.from(chunk));
+  const ss = new StreamSearch(encoder.encode(needle),
+    (isMatch, data, start, end) => {
+      if (data) {
+        data = decoder.decode(data.subarray(start, end))
+      } else {
+        data = null
+      }
+      results.push([isMatch, data])
+    })
 
-  assert.deepStrictEqual(results, expect);
-});
+  for (const chunk of chunks) {
+    ss.push(encoder.encode(chunk))
+  }
+
+  assert.deepStrictEqual(results, expect)
+})
